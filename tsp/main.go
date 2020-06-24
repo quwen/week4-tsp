@@ -1,17 +1,29 @@
 package main
 
 import (
+	"bufio"
 	"encoding/csv"
 	"flag"
+	"fmt"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"strings"
 )
 
+//City has City Coordinates
 type City struct {
 	x float64
 	y float64
+}
+
+func (a *City) DistanceTo(b City) float64 {
+	dx := float64(a.x - b.x)
+	dy := float64(a.y - b.y)
+
+	fd := math.Sqrt((dx * dx) + (dy * dy))
+	return fd
 }
 
 //readInput is reads a csv file and returns a slice of the city's coordinates.
@@ -28,12 +40,13 @@ func readInput(in string) []City {
 	}
 	defer file.Close()
 
+	scanner := bufio.NewScanner(file)
 	// Read one line at a time and repeat.
 	for scanner.Scan() {
 		line := scanner.Text()
 		xy := strings.Split(line, ",")
-		x, err := strconv.ParseFloat(xy[0], 32)
-		y, err := strconv.ParseFloat(xy[1], 32)
+		x, _ := strconv.ParseFloat(xy[0], 32)
+		y, _ := strconv.ParseFloat(xy[1], 32)
 		cities = append(cities, City{x, y})
 	}
 	return cities
@@ -45,25 +58,35 @@ func printSolution(in string, solution []string) {
 	//書き込み用に開く
 	file, err := os.Create(path)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	defer file.Close()
 
 	writer := csv.NewWriter(file)
-	for _, s := range solution {
-		if err := writer.Write(s); err != nil {
-			log.Fatalln("error writing record to csv:", err)
-		}
+	if err := writer.Write(solution); err != nil {
+		log.Fatalln("error writing record to csv:", err)
 	}
+
+	writer.Flush()
 }
 
 func main() {
-	var n = flag.String("input number", "0", "input number is 0-6")
+	var in = flag.String("input", "0", "input number is 0-6")
 	flag.Parse()
-	cities := readInput(*n)
-
+	cities := readInput(*in)
 	var solution []string
+
+	for i := 1; i < len(cities); i++ {
+		fmt.Println(len(cities))
+		if i == len(cities)-1 {
+			s := strconv.Itoa(int(cities[i].DistanceTo(cities[1])))
+			solution = append(solution, s)
+			continue
+		}
+		s := strconv.Itoa(int(cities[i].DistanceTo(cities[i+1])))
+		solution = append(solution, s)
+	}
 
 	printSolution(*in, solution)
 
